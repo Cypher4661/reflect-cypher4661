@@ -5,6 +5,8 @@ import { WidgetChooserDescriptor } from "./WidgetChooser";
 import { WidgetColorDescriptor } from "./WidgetColor";
 import { WidgetField2dDescriptor } from "./WidgetField2d";
 import { WidgetFMSDescriptor } from "./WidgetFMS";
+import { WidgetGaugeLinearDescriptor } from "./WidgetGaugeLinear";
+import { WidgetGaugeRadialDescriptor } from "./WidgetGaugeRadial";
 import { WidgetGyroDescriptor } from "./WidgetGyro";
 import { WidgetMatchTimeDescriptor } from "./WidgetMatchTime";
 import { WidgetPowerPdhDescriptor, WidgetPowerPdpDescriptor } from "./WidgetPowerDistribution";
@@ -29,6 +31,8 @@ export const WidgetRegistry: Record<WidgetType, WidgetDescriptor> = [
   WidgetMatchTimeDescriptor,
   WidgetAlertsDescriptor,
   WidgetChartLineDescriptor,
+  WidgetGaugeRadialDescriptor,
+  WidgetGaugeLinearDescriptor,
   WidgetPowerPdhDescriptor,
   WidgetPowerPdpDescriptor,
   WidgetGyroDescriptor,

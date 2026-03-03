@@ -12,6 +12,8 @@ export const WidgetTypeValues = [
   "field2d",
   "robot3d",
   "chart.line",
+  "gauge.radial",
+  "gauge.linear",
   "color",
   "value",
   "camera",
