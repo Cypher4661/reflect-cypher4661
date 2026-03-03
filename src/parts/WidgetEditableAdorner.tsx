@@ -71,6 +71,7 @@ export const WidgetEditableAdorner = ({
               </Button>
             </DropdownMenuTrigger>
             {widget.descriptor.props.menu({
+              descriptor: widget.descriptor,
               props: widget.props,
               onPropsChange: (v) => onWidgetUpdateProps(widget.id, v),
             })}

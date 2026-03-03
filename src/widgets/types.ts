@@ -10,8 +10,16 @@ import type { WidgetLayoutConstraints, WidgetType } from "../specs";
 export type WidgetComponentProps<P = void> = {
   /** Slot reference */
   slot?: string;
-  /** Data extracted from the channel and possibly transformed */
+  /** Data extracted from the default channel and possibly transformed */
   data?: unknown;
+  /** Data extracted from the named channels and possible transformed */
+  namedData?: Record<
+    string,
+    Readonly<{
+      timestamp: number;
+      value: unknown;
+    }>
+  >;
   /** Callback to publish channel data if supported */
   publish?: (value: unknown, path?: ReadonlyArray<string>, options?: DataChannelPublisherOptions) => void;
   /** Custom widget properties */
@@ -21,13 +29,41 @@ export type WidgetComponentProps<P = void> = {
 };
 
 export type WidgetEditorProps<P> = {
+  /** Widget descriptor */
+  descriptor: WidgetDescriptor;
   /** Custom widget properties */
   props: P;
+  /** Default channel slot */
+  slot: string | undefined;
+  /** Named channel slots */
+  slots: Record<string, string> | undefined;
   /** Callback updating custom widget properties */
   onPropsChange: (v: P) => void;
+  /** Callback updating default channel slot */
+  onSlotChange: (v: string | undefined) => void;
+  /** Callback updating named channel slots */
+  onSlotsChange: (v: Record<string, string> | undefined) => void;
   /** Indicates that editor is disabled */
   disabled?: boolean;
 };
+
+export type WidgetQuickMenuProps<P> = Omit<WidgetEditorProps<P>, "slot" | "slots" | "onSlotChange" | "onSlotsChange">;
+
+export type WidgetDescriptorSlot<P = unknown> = Readonly<{
+  /** Data transformer */
+  transform?: (
+    dataType: DataType,
+    records: ReadonlyArray<DataChannelRecord>,
+    structuredType: StructuredTypeDescriptor | undefined,
+    props: P
+  ) => unknown;
+  /** Accepted data types */
+  accepts?: {
+    primitive?: ReadonlyArray<DataType>;
+    json?: ReadonlyArray<string>;
+    composite?: ReadonlyArray<string>;
+  };
+}>;
 
 export type WidgetDescriptor<P = unknown> = Readonly<{
   /** Widget type */
@@ -46,26 +82,16 @@ export type WidgetDescriptor<P = unknown> = Readonly<{
   height: number;
   /** Default layout constraints */
   constraints?: WidgetLayoutConstraints;
-  /** Data slot definition */
-  slot?: Readonly<{
-    /** Default lookback period in seconds */
-    lookback?: number;
-    /** Data transformer */
-    transform?: (
-      dataType: DataType,
-      records: ReadonlyArray<DataChannelRecord>,
-      structuredType: StructuredTypeDescriptor | undefined,
-      props: P
-    ) => unknown;
-    /** Accepted data types */
-    accepts?: {
-      primitive?: ReadonlyArray<DataType>;
-      json?: ReadonlyArray<string>;
-      composite?: ReadonlyArray<string>;
-    };
-    /** Default channel binding */
-    defaultChannel?: string;
-  }>;
+  /** Default data slot definition */
+  slot?: WidgetDescriptorSlot<P> &
+    Readonly<{
+      /** Default lookback period in seconds */
+      lookback?: number;
+      /** Default channel binding */
+      defaultChannel?: string;
+    }>;
+  /** Named data slots definitions */
+  slots?: Record<string, WidgetDescriptorSlot<P>>;
   /** Custom properties specification */
   props?: Readonly<{
     /** Properties schema */
@@ -75,7 +101,7 @@ export type WidgetDescriptor<P = unknown> = Readonly<{
     /** Render function for custom properties editor */
     editor: (props: WidgetEditorProps<P>) => React.ReactNode;
     /** Render function for custom properties quick menu */
-    menu?: (props: WidgetEditorProps<P>) => React.ReactNode;
+    menu?: (props: WidgetQuickMenuProps<P>) => React.ReactNode;
   }>;
   /** Spotlight background */
   spotlight?: boolean;

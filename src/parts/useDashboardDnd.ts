@@ -274,7 +274,7 @@ export function useDashboardDnd(
             isDashboardDndData(overData) &&
             overData.type === "widget" &&
             dragData.props.channel &&
-            canAccept(overData.widget.descriptor, dragData.props.channel)
+            canAccept(overData.widget.descriptor.slot, dragData.props.channel)
           ) {
             updateWidgetSlot(overData.widget.id, Slot.fromChannel(dragData.props.channel));
           }

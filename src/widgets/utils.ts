@@ -14,7 +14,7 @@ import type {
   Rotation2dStruct,
   Rotation3dStruct,
 } from "@2702rebels/wpidata/types/struct";
-import type { WidgetDescriptor } from "./types";
+import type { WidgetDescriptorSlot } from "./types";
 
 export interface Quaternion {
   readonly w: number;
@@ -368,9 +368,7 @@ export function withPreview<T>(mode: "template" | "design" | undefined, data: T 
 /**
  * Determines whether the widget data slot accepts the data channel.
  */
-export function canAccept(descriptor: WidgetDescriptor, channel: DataChannel) {
-  const slot = descriptor.slot;
-
+export function canAccept(slot: WidgetDescriptorSlot | null | undefined, channel: DataChannel) {
   // assume anything goes if there is no slot specification
   if (slot == null) {
     return true;

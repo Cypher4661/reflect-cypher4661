@@ -12,15 +12,21 @@ import { WidgetSlotSelect } from "./WidgetSlotSelect";
 
 import type { ModalProps } from "./ModalTemplate";
 
-const { updateWidgetLookback, updateWidgetProps, updateWidgetSlot } = workspaceActions;
+const { updateWidgetLookback, updateWidgetProps, updateWidgetNamedSlots, updateWidgetSlot } = workspaceActions;
 
 type WidgetPropsEditorPanelProps = {
   widgetId: string;
 };
 
 const WidgetPropsEditorPanel = ({ disabled, widgetId }: ModalProps & WidgetPropsEditorPanelProps) => {
-  const { descriptor, props, lookback, slot } = useWidget(widgetId)!;
+  const { descriptor, props, lookback, slot, slots } = useWidget(widgetId)!;
+
+  const handlePropsChange = useCallback((v: unknown) => updateWidgetProps(widgetId, v), [widgetId]);
   const handleSlotChange = useCallback((v: string | undefined) => updateWidgetSlot(widgetId, v), [widgetId]);
+  const handleSlotsChange = useCallback(
+    (v: Record<string, string> | undefined) => updateWidgetNamedSlots(widgetId, v),
+    [widgetId]
+  );
 
   return (
     <>
@@ -49,7 +55,7 @@ const WidgetPropsEditorPanel = ({ disabled, widgetId }: ModalProps & WidgetProps
           }
           className="pt-4">
           <WidgetSlotSelect
-            descriptor={descriptor}
+            slot={descriptor.slot}
             value={slot}
             onChange={handleSlotChange}
           />
@@ -68,9 +74,14 @@ const WidgetPropsEditorPanel = ({ disabled, widgetId }: ModalProps & WidgetProps
           />
         </EditorBlock>
         {descriptor.props?.editor({
-          onPropsChange: (v) => updateWidgetProps(widgetId, v),
+          descriptor,
           props,
           disabled,
+          slot,
+          slots,
+          onPropsChange: handlePropsChange,
+          onSlotChange: handleSlotChange,
+          onSlotsChange: handleSlotsChange,
         })}
       </ScrollArea>
     </>

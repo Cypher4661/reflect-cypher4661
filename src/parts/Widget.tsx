@@ -1,11 +1,13 @@
 import { useCallback, useState } from "react";
 
-import { useDataChannel } from "../stores/Data";
+import { useImmer } from "../hooks/useImmer";
+import { useDataChannel, useNamedDataChannels } from "../stores/Data";
 import { useSettingsStore } from "../stores/Settings";
 import { WidgetNoSlotOverlay } from "../widgets/parts/WidgetNoSlotOverlay";
 import { useAnimationLoop } from "./AnimationLoop";
 
-import type { DataChannelPublisherOptions, DataChannelRecord } from "@2702rebels/wpidata/abstractions";
+import type { WidgetDescriptorSlot } from "src/widgets/types";
+import type { DataChannel, DataChannelPublisherOptions, DataChannelRecord } from "@2702rebels/wpidata/abstractions";
 import type { RuntimeWidget } from "../stores/Workspace";
 
 type TimestampedData = {
@@ -18,7 +20,7 @@ const noData = {
   value: undefined,
 } satisfies TimestampedData;
 
-const getRecentRecords = (records: ReadonlyArray<DataChannelRecord>, lookback: number) => {
+function getRecentRecords(records: ReadonlyArray<DataChannelRecord>, lookback: number) {
   const result = [];
   let timestamp: number | undefined;
 
@@ -42,7 +44,42 @@ const getRecentRecords = (records: ReadonlyArray<DataChannelRecord>, lookback: n
   }
 
   return result;
-};
+}
+
+function processDataFromChannel<P>(
+  channel: DataChannel | undefined,
+  prevData: TimestampedData | undefined,
+  options: {
+    lookback?: number;
+    transform?: WidgetDescriptorSlot["transform"];
+    props: P;
+  }
+) {
+  if (channel?.records && channel.records.length > 0) {
+    const records =
+      options.lookback == null || options.lookback <= 0
+        ? [channel.records.at(-1)!]
+        : getRecentRecords(channel.records, options.lookback * 1e6);
+
+    if (records.length === 0) {
+      return noData;
+    }
+
+    const timestamp = records.at(-1)!.timestamp;
+    if (prevData == null || prevData.timestamp < timestamp) {
+      return {
+        timestamp,
+        value: options.transform
+          ? options.transform(channel.dataType, records, channel.structuredType, options.props)
+          : records,
+      };
+    } else {
+      return prevData;
+    }
+  } else {
+    return noData;
+  }
+}
 
 export type WidgetProps = React.ComponentProps<"div"> & {
   widget: RuntimeWidget;
@@ -50,41 +87,13 @@ export type WidgetProps = React.ComponentProps<"div"> & {
 };
 
 export const Widget = ({ widget, mode, ...props }: WidgetProps) => {
-  const { descriptor, slot, lookback, props: widgetProps } = widget;
+  const { descriptor, slot, slots, lookback, props: widgetProps } = widget;
+
   const channel = useDataChannel(slot);
+  const namedChannels = useNamedDataChannels(slots);
 
-  const [data, setData] = useState<TimestampedData>(noData);
-
-  const update = useCallback(() => {
-    if (channel?.records && channel.records.length > 0) {
-      const records =
-        lookback == null || lookback <= 0
-          ? [channel.records.at(-1)!]
-          : getRecentRecords(channel.records, lookback * 1e6);
-
-      if (records.length === 0) {
-        setData(noData);
-        return;
-      }
-
-      const timestamp = records.at(-1)!.timestamp;
-      setData((prevData) => {
-        if (prevData.timestamp < timestamp) {
-          return {
-            timestamp,
-            value: descriptor.slot?.transform
-              ? descriptor.slot.transform(channel.dataType, records, channel.structuredType, widgetProps)
-              : records,
-          };
-        } else {
-          return prevData;
-        }
-      });
-    } else {
-      setData(noData);
-    }
-  }, [channel, descriptor.slot, lookback, widgetProps]);
-
+  // publishing is supported on the main (default) channel only,
+  // named channels can only be subscribed for data retrieval
   const publish = useCallback(
     (value: unknown, path?: ReadonlyArray<string>, options?: DataChannelPublisherOptions) => {
       if (channel && channel.publish) {
@@ -136,17 +145,43 @@ export const Widget = ({ widget, mode, ...props }: WidgetProps) => {
     [channel]
   );
 
+  const [data, setData] = useState<TimestampedData>(noData);
+  const [namedData, setNamedData] = useImmer<Record<string, TimestampedData>>({});
+
+  const update = useCallback(() => {
+    setData((prevData) =>
+      processDataFromChannel(channel, prevData, {
+        lookback,
+        transform: descriptor.slot?.transform,
+        props: widgetProps,
+      })
+    );
+
+    if (namedChannels) {
+      setNamedData((draft) => {
+        for (const [name, channel] of Object.entries(namedChannels)) {
+          draft[name] = processDataFromChannel(channel, draft[name], {
+            lookback,
+            transform: descriptor.slots?.[name]?.transform ?? descriptor.slot?.transform,
+            props: widgetProps,
+          });
+        }
+      });
+    }
+  }, [channel, namedChannels, descriptor.slot, descriptor.slots, lookback, widgetProps, setNamedData]);
+
   const animationFps = useSettingsStore.use.animationFps();
   useAnimationLoop(update, animationFps);
 
   const slotBindingRequired = descriptor.slot?.accepts != null;
+  const slotBindingPresent = slot || (slots != null && Object.values(slots).some((_) => !!_));
   return (
     <div
       {...props}
       className="relative flex h-full w-full flex-col overflow-hidden rounded-lg border border-muted-foreground/20 bg-muted">
       {descriptor.spotlight !== false && <div className="absolute inset-0 bg-spotlight" />}
-      {descriptor.component({ mode, slot, data: data.value, props: widgetProps, publish })}
-      {!mode && !slot && slotBindingRequired && <WidgetNoSlotOverlay />}
+      {descriptor.component({ mode, slot, data: data.value, namedData, props: widgetProps, publish })}
+      {!mode && !slotBindingPresent && slotBindingRequired && <WidgetNoSlotOverlay />}
     </div>
   );
 };

@@ -15,7 +15,7 @@ import { RobotTop } from "./parts/RobotTop";
 import { toDegrees, toRotation3d, withPreview } from "./utils";
 
 import type { DataChannelRecord, DataType, StructuredTypeDescriptor } from "@2702rebels/wpidata/abstractions";
-import type { WidgetComponentProps, WidgetDescriptor, WidgetEditorProps } from "./types";
+import type { WidgetComponentProps, WidgetDescriptor, WidgetEditorProps, WidgetQuickMenuProps } from "./types";
 
 const ticks = scaleLinear().range([0, 360]).domain([0, 72]);
 const tickLabelsPitchRoll = [
@@ -296,7 +296,7 @@ const Editor = ({ props, onPropsChange }: WidgetEditorProps<PropsType>) => {
   );
 };
 
-const QuickMenu = ({ props, onPropsChange }: WidgetEditorProps<PropsType>) => {
+const QuickMenu = ({ props, onPropsChange }: WidgetQuickMenuProps<PropsType>) => {
   return (
     <DropdownMenuContent align="end">
       <DropdownMenuRadioGroup

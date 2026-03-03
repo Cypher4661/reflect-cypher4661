@@ -266,7 +266,7 @@ const DynamicWidget = ({
         if (e.over?.id === widget.id) {
           const dragData = e.active.data.current;
           if (isDashboardDndData(dragData) && dragData.type === "topic" && dragData.props.channel) {
-            setDroppableState(canAccept(widget.descriptor, dragData.props.channel));
+            setDroppableState(canAccept(widget.descriptor.slot, dragData.props.channel));
             return;
           }
         }

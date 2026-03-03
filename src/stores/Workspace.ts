@@ -82,8 +82,14 @@ type WorkspaceStoreActions = {
   updateWidgetProps: (widgetId: string, props: unknown, dashboardId?: string) => void;
   /** Updates widget lookback period */
   updateWidgetLookback: (widgetId: string, lookback: number, dashboardId?: string) => void;
-  /** Updates widget data slot */
-  updateWidgetSlot: (widgetId: string, channelId: string | undefined, dashboardId?: string) => void;
+  /** Updates widget default data slot */
+  updateWidgetSlot: (widgetId: string, channel: string | undefined, dashboardId?: string) => void;
+  /** Updates widget named slots */
+  updateWidgetNamedSlots: (
+    widgetId: string,
+    channels: Record<string, string> | undefined,
+    dashboardId?: string
+  ) => void;
   /** Updates dashboard viewport */
   updateViewport: (x: number, y: number, scale: number, dashboardId?: string) => void;
   /** Sets hydration state to `true` */
@@ -135,6 +141,11 @@ const getSlots = (dashboards: WorkspaceStore["dashboards"]) => {
       if (widget.slot) {
         set.add(widget.slot);
       }
+      if (widget.slots) {
+        for (const slot of Object.values(widget.slots)) {
+          set.add(slot);
+        }
+      }
     }
   }
 
@@ -162,6 +173,7 @@ function persistDashboard(dashboard: RuntimeDashboard): DashboardRecord {
       layout: widget.layout,
       constraints: widget.constraints,
       slot: widget.slot,
+      slots: widget.slots,
       lookback: widget.lookback,
       props: widget.props,
     })),
@@ -371,11 +383,19 @@ export const useWorkspaceStore = create(
           }
         }),
 
-      updateWidgetSlot: (widgetId, channelId, dashboardId) =>
+      updateWidgetSlot: (widgetId, channel, dashboardId) =>
         set((draft) => {
           const widget = getDashboard(draft, dashboardId)?.widgets[widgetId];
           if (widget) {
-            widget.slot = channelId;
+            widget.slot = channel;
+          }
+        }),
+
+      updateWidgetNamedSlots: (widgetId, channels, dashboardId) =>
+        set((draft) => {
+          const widget = getDashboard(draft, dashboardId)?.widgets[widgetId];
+          if (widget) {
+            widget.slots = channels;
           }
         }),
 
@@ -432,6 +452,7 @@ const selectActions = (state: WorkspaceStoreActions) => ({
   updateWidgetLookback: state.updateWidgetLookback,
   updateWidgetProps: state.updateWidgetProps,
   updateWidgetSlot: state.updateWidgetSlot,
+  updateWidgetNamedSlots: state.updateWidgetNamedSlots,
   updateViewport: state.updateViewport,
 });
 
@@ -468,6 +489,7 @@ const {
   updateWidgetProps,
   updateWidgetLookback,
   updateWidgetSlot,
+  updateWidgetNamedSlots,
   updateViewport,
 } = workspaceActions;
 
@@ -483,6 +505,8 @@ export function useDashboardActions(dashboardId: string) {
       updateWidgetProps: (id: string, props: unknown) => updateWidgetProps(id, props, dashboardId),
       updateWidgetLookback: (id: string, lookback: number) => updateWidgetLookback(id, lookback, dashboardId),
       updateWidgetSlot: (id: string, channel: string | undefined) => updateWidgetSlot(id, channel, dashboardId),
+      updateWidgetNamedSlots: (id: string, channels: Record<string, string> | undefined) =>
+        updateWidgetNamedSlots(id, channels, dashboardId),
       updateViewport: (x: number, y: number, scale: number) => updateViewport(x, y, scale, dashboardId),
     }),
     [dashboardId]

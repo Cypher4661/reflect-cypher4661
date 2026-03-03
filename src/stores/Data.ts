@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { create } from "zustand";
+import { useShallow } from "zustand/react/shallow";
 
 import { binarySearch } from "@2702rebels/shared/binarySearch";
 import { Collator } from "@2702rebels/shared/collator";
@@ -276,7 +277,7 @@ export function useSuppliers() {
 }
 
 /**
- * Hook that returns the named channel.
+ * Hook that returns the channel.
  *
  * This hook creates store subscription that refreshes the caller component
  * should the underlying channel definition change.
@@ -289,4 +290,31 @@ export function useDataChannel(slot: string | undefined) {
     }
     return undefined;
   });
+}
+
+/**
+ * Hook that returns a set of named channels.
+ *
+ * This hook creates store subscription that refreshes the caller component
+ * should the underlying channel definitions change.
+ */
+export function useNamedDataChannels(slots: Record<string, string> | undefined) {
+  return useDataStore(
+    useShallow((state) => {
+      if (slots) {
+        const channels: Record<string, DataChannel> = {};
+        for (const [name, slot] of Object.entries(slots)) {
+          const channelRef = Slot.toChannel(slot);
+          if (channelRef) {
+            const channelData = state.sink.get(channelRef.source, channelRef.id);
+            if (channelData) {
+              channels[name] = channelData;
+            }
+          }
+        }
+        return channels;
+      }
+      return undefined;
+    })
+  );
 }

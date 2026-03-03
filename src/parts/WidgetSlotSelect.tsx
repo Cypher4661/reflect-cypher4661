@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { Button } from "@ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@ui/popover";
 
+import { cn } from "../lib/utils";
 import { useDataChannel } from "../stores/Data";
 import { Slot } from "../widgets/slot";
 import { canAccept } from "../widgets/utils";
@@ -11,21 +12,27 @@ import { TopicEntry } from "./TopicEntry";
 import { TopicsExplorer } from "./TopicsExplorer";
 
 import type { DataNode } from "../stores/Data";
-import type { WidgetDescriptor } from "../widgets/types";
+import type { WidgetDescriptorSlot } from "../widgets/types";
 
 export type WidgetSlotSelectProps = {
-  descriptor: WidgetDescriptor;
+  className?: string;
+  slot?: WidgetDescriptorSlot;
   value?: string;
   onChange?: (value: string | undefined) => void;
 };
 
-export const WidgetSlotSelect = ({ descriptor, value, onChange }: WidgetSlotSelectProps) => {
+export const WidgetSlotSelect = ({ className, slot, value, onChange }: WidgetSlotSelectProps) => {
   const [open, setOpen] = useState(false);
 
   const channel = useDataChannel(value);
-  const filter = useCallback(
-    (node: DataNode) => node.channel != null && canAccept(descriptor, node.channel),
-    [descriptor]
+  const filter = useCallback((node: DataNode) => node.channel != null && canAccept(slot, node.channel), [slot]);
+
+  const handleChange = useCallback(
+    (v: string | undefined) => {
+      onChange?.(v);
+      setOpen(false);
+    },
+    [onChange]
   );
 
   return (
@@ -37,7 +44,7 @@ export const WidgetSlotSelect = ({ descriptor, value, onChange }: WidgetSlotSele
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between px-3">
+          className={cn("w-full justify-between px-3", className)}>
           {value && channel ? (
             <TopicEntry
               id={value}
@@ -56,7 +63,7 @@ export const WidgetSlotSelect = ({ descriptor, value, onChange }: WidgetSlotSele
         <TopicsExplorer
           className="bg-secondary/20"
           value={value}
-          onChange={onChange}
+          onChange={handleChange}
           filter={filter}
         />
       </PopoverContent>

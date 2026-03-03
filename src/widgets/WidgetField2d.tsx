@@ -18,7 +18,7 @@ import { RobotTop } from "./parts/RobotTop";
 import { toPose2d } from "./utils";
 
 import type { DataChannelRecord, DataType, StructuredTypeDescriptor } from "@2702rebels/wpidata/abstractions";
-import type { WidgetComponentProps, WidgetDescriptor, WidgetEditorProps } from "./types";
+import type { WidgetComponentProps, WidgetDescriptor, WidgetEditorProps, WidgetQuickMenuProps } from "./types";
 
 const propsSchema = z.object({
   style: z.enum(["default", "2026", "2026-empty", "2025", "2024", "2024-choreo"]),
@@ -259,7 +259,7 @@ const Editor = ({ props, onPropsChange }: WidgetEditorProps<PropsType>) => {
   );
 };
 
-const QuickMenu = ({ props, onPropsChange }: WidgetEditorProps<PropsType>) => {
+const QuickMenu = ({ props, onPropsChange }: WidgetQuickMenuProps<PropsType>) => {
   return (
     <DropdownMenuContent align="end">
       <DropdownMenuRadioGroup

@@ -49,6 +49,7 @@ const WidgetRecord = z.object({
   layout: WidgetLayout,
   constraints: WidgetLayoutConstraints.optional(),
   slot: z.string().optional(),
+  slots: z.record(z.string(), z.string()).optional(),
   lookback: z.number().nonnegative().optional(),
   props: z.unknown().optional(),
 });
